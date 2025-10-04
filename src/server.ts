@@ -2,6 +2,7 @@ import cors from "cors";
 import express from "express";
 import morgan from "morgan";
 import config from "./config";
+import llmClient from "./llm/client";
 import router from "./routes";
 import { ApiResponse, ErrorResponse } from "./types";
 import logger from "./utils/logger";
@@ -84,10 +85,55 @@ app.use(
 );
 
 // Start server
-const server = app.listen(config.port, () => {
+const server = app.listen(config.port, async () => {
   logger.info(` Planning Layer API server running on port ${config.port}`);
   logger.info(` Environment: ${config.nodeEnv}`);
   logger.info(` Health check: http://localhost:${config.port}/health`);
+
+  // Validate LLM providers on startup
+  try {
+    logger.info("Validating LLM provider configurations...");
+    const validation = await llmClient.validateProviders();
+
+    if (validation.working.length === 0) {
+      logger.warn("⚠️  No working LLM providers found!");
+      logger.warn(
+        "⚠️  The API will not be able to generate plans until at least one provider is properly configured."
+      );
+      logger.warn(
+        "⚠️  Please check your API keys in the environment configuration."
+      );
+
+      if (validation.configured.length > 0) {
+        logger.info("Configured but failing providers:");
+        Object.entries(validation.errors).forEach(([provider, error]) => {
+          logger.info(`  - ${provider}: ${error}`);
+        });
+      } else {
+        logger.info(
+          "No LLM providers are configured. Please set API keys for:"
+        );
+        logger.info("  - OPENAI_API_KEY for OpenAI");
+        logger.info("  - ANTHROPIC_API_KEY for Anthropic");
+        logger.info("  - DEEPSEEK_API_KEY for DeepSeek");
+      }
+    } else {
+      logger.info(
+        `✅ ${
+          validation.working.length
+        } working LLM provider(s): ${validation.working.join(", ")}`
+      );
+
+      if (Object.keys(validation.errors).length > 0) {
+        logger.warn("Some providers have issues:");
+        Object.entries(validation.errors).forEach(([provider, error]) => {
+          logger.warn(`  - ${provider}: ${error}`);
+        });
+      }
+    }
+  } catch (error) {
+    logger.error("Failed to validate LLM providers:", error);
+  }
 });
 
 // Graceful shutdown
