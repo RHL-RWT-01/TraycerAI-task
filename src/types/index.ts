@@ -11,6 +11,23 @@ export interface ErrorResponse {
   statusCode: number;
   message: string;
   details?: any;
+  validationErrors?: ValidationError[];
+}
+
+export interface ValidationError {
+  field: string;
+  message: string;
+  code: string;
+}
+
+export interface PaginationParams {
+  page: number;
+  limit: number;
+  total?: number;
+}
+
+export interface PaginatedResponse<T> extends ApiResponse<T> {
+  pagination: PaginationParams;
 }
 
 export interface PlanRequest {
@@ -27,3 +44,4 @@ export interface AnalysisResult {
   complexity?: number;
   recommendations?: string[];
 }
+

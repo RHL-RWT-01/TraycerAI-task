@@ -1,4 +1,4 @@
-import config from "../config/index.js";
+import config from "../config";
 
 type LogLevel = "debug" | "info" | "warn" | "error";
 
@@ -63,3 +63,4 @@ const logger: Logger = {
 };
 
 export default logger;
+
