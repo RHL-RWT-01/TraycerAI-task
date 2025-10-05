@@ -43,7 +43,6 @@ export const validateRequest = (
         // Log validation error
         logger.warn(`Validation failed for ${source}:`, error.errors);
 
-        // Format validation errors into readable messages
         const validationErrors = error.errors.map((err) => ({
           field: err.path.join("."),
           message: err.message,
@@ -75,3 +74,4 @@ export const validateRequest = (
 };
 
 export default validateRequest;
+

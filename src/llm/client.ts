@@ -1,9 +1,10 @@
-import { AnalysisResponse } from "../schemas/analysis.schema";
 import config from "../config";
+import { AnalysisResponse } from "../types";
 import logger from "../utils/logger";
 import { parsePlanFromResponse, validatePlanStructure } from "./parser";
 import {
   buildPlanGenerationPrompt,
+  buildSimplePlanGenerationPrompt,
   buildSystemPrompt,
 } from "./prompts/planGeneration.prompt";
 import anthropicProvider from "./providers/anthropic.provider";
@@ -326,6 +327,7 @@ export class LLMClient {
     );
   }
 
+  // Overloaded method - with analysis
   async generatePlan(
     taskDescription: string,
     analysisResult: AnalysisResponse,
@@ -333,33 +335,68 @@ export class LLMClient {
       provider?: LLMProvider;
       model?: Partial<LLMModel>;
     }
+  ): Promise<string>;
+
+  // Overloaded method - without analysis
+  async generatePlan(
+    taskDescription: string,
+    options?: {
+      provider?: LLMProvider;
+      model?: Partial<LLMModel>;
+    }
+  ): Promise<string>;
+
+  async generatePlan(
+    taskDescription: string,
+    analysisResultOrOptions?:
+      | AnalysisResponse
+      | {
+          provider?: LLMProvider;
+          model?: Partial<LLMModel>;
+        },
+    options?: {
+      provider?: LLMProvider;
+      model?: Partial<LLMModel>;
+    }
   ): Promise<string> {
     const startTime = Date.now();
 
+    // Determine if we have analysis result or just options
+    let analysisResult: AnalysisResponse | null = null;
+    let finalOptions: typeof options = options;
+
+    if (analysisResultOrOptions && "codebasePath" in analysisResultOrOptions) {
+      // First overload - we have analysis result
+      analysisResult = analysisResultOrOptions;
+    } else {
+      // Second overload - no analysis, options passed as second parameter
+      finalOptions = analysisResultOrOptions as typeof options;
+    }
+
     logger.info("Starting plan generation", {
       taskLength: taskDescription.length,
-      codebasePath: analysisResult.codebasePath,
-      options,
+      codebasePath: analysisResult?.codebasePath || "no-codebase",
+      hasAnalysis: !!analysisResult,
+      options: finalOptions,
     });
 
     try {
       // Select provider
-      const selectedProvider = options?.provider || this.defaultProvider;
+      const selectedProvider = finalOptions?.provider || this.defaultProvider;
 
       // Get model configuration
       const baseModel = getDefaultModels()[selectedProvider];
       const model: LLMModel = {
         ...baseModel,
-        ...options?.model,
+        ...finalOptions?.model,
         provider: selectedProvider,
       };
 
       // Build prompts
       const systemPrompt = buildSystemPrompt();
-      const userPrompt = buildPlanGenerationPrompt(
-        taskDescription,
-        analysisResult
-      );
+      const userPrompt = analysisResult
+        ? buildPlanGenerationPrompt(taskDescription, analysisResult)
+        : buildSimplePlanGenerationPrompt(taskDescription);
 
       // Create request
       const request: LLMRequest = {

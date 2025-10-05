@@ -3,11 +3,11 @@ import path from "path";
 import { PlanResponse } from "../schemas/plan.schema";
 import logger from "../utils/logger";
 import {
-    ListPlansOptions,
-    ListPlansResult,
-    PlanIndex,
-    PlanIndexEntry,
-    StoredPlan,
+  ListPlansOptions,
+  ListPlansResult,
+  PlanIndex,
+  PlanIndexEntry,
+  StoredPlan,
 } from "./types";
 
 // Constants
@@ -118,10 +118,8 @@ export async function savePlan(
     const indexEntry: PlanIndexEntry = {
       id: planResponse.id,
       taskDescription: planResponse.taskDescription,
-      codebasePath: planResponse.codebasePath,
       createdAt: planResponse.createdAt,
       status,
-      fileCount: planResponse.metadata.fileCount,
     };
 
     // Update index with retry logic to handle concurrent writes
@@ -179,7 +177,6 @@ export async function savePlan(
     logger.info("Plan saved successfully", {
       planId: planResponse.id,
       status,
-      fileCount: planResponse.metadata.fileCount,
     });
 
     return storedPlan;
@@ -259,15 +256,8 @@ export async function listPlans(
 
     // Sort index entries
     const sortedEntries = [...index.plans].sort((a, b) => {
-      let comparison = 0;
-
-      if (sortBy === "createdAt") {
-        comparison =
-          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-      } else if (sortBy === "fileCount") {
-        comparison = a.fileCount - b.fileCount;
-      }
-
+      const comparison =
+        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
       return sortOrder === "desc" ? -comparison : comparison;
     });
 

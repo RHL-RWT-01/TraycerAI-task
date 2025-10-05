@@ -13,10 +13,8 @@ export interface StoredPlan extends PlanResponse {
 export interface PlanIndexEntry {
   id: string; // UUID
   taskDescription: string; // for quick preview
-  codebasePath: string;
   createdAt: string; // ISO timestamp
   status: "completed" | "failed";
-  fileCount: number; // from metadata, for sorting/filtering
 }
 
 /**
@@ -34,7 +32,7 @@ export interface PlanIndex {
 export interface ListPlansOptions {
   page: number; // default 1
   limit: number; // default 10, max 100
-  sortBy?: "createdAt" | "fileCount";
+  sortBy?: "createdAt";
   sortOrder?: "asc" | "desc";
 }
 

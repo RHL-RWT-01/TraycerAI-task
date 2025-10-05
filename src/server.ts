@@ -46,9 +46,9 @@ app.get("/", (req, res) => {
       endpoints: {
         health: "/health",
         plans: "/api/plans",
-        analysis: "/api/analysis",
         createPlan: "POST /api/plans",
-        analyzeCodebase: "POST /api/analysis",
+        getPlan: "GET /api/plans/:id",
+        listPlans: "GET /api/plans",
       },
     },
   };

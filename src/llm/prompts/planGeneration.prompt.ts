@@ -1,4 +1,4 @@
-import { AnalysisResponse } from "../../schemas/analysis.schema";
+import { AnalysisResponse } from "../../types";
 
 export function buildSystemPrompt(): string {
   return `You are an expert software architect and planning assistant.
@@ -13,6 +13,46 @@ Guidelines:
 - Use clear section headers and bullet points
 - Break down complex tasks into logical phases (3-6 phases typically)
 - Consider the existing codebase structure and patterns`;
+}
+
+export function buildSimplePlanGenerationPrompt(
+  taskDescription: string
+): string {
+  return `## Task Description
+
+${taskDescription}
+
+## Instructions
+
+Generate a high-level implementation plan with the following structure:
+
+1. Break down the task into logical phases (3-6 phases typically)
+2. For each phase, provide:
+   - A clear phase title
+   - 2-4 bullet points describing the work
+   - Reference specific files or directories when relevant (use backticks for file paths)
+3. Keep descriptions concise and actionable
+4. Focus on WHAT needs to be done, not HOW to implement it
+5. Consider common project structures and patterns
+
+## Expected Output Format
+
+Use this Markdown structure:
+
+\`\`\`
+Phase: [Phase Name]
+
+- [Action item with file reference \`path/to/file.ts\`]
+- [Action item]
+- [Action item]
+
+Phase: [Next Phase Name]
+
+- [Action item]
+- [Action item]
+\`\`\`
+
+Generate the implementation plan now:`;
 }
 
 export function buildPlanGenerationPrompt(
@@ -122,3 +162,4 @@ export function buildContextSummary(analysisResult: AnalysisResponse): string {
 
   return contextSummary.trim();
 }
+

@@ -20,3 +20,8 @@ coverage/
 # Editor directories and files
 .vscode/
 .idea/
+
+# Storage - generated plan files
+data/
+
+client/

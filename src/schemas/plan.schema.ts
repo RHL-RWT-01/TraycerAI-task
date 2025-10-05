@@ -6,18 +6,6 @@ export const CreatePlanRequestSchema = z.object({
     .string()
     .min(10, "Task description must be at least 10 characters")
     .max(2000, "Task description cannot exceed 2000 characters"),
-  codebasePath: z.string().min(1, "Codebase path is required"),
-  includeFileTree: z.boolean().optional().default(false),
-  maxDepth: z
-    .number()
-    .min(1, "Max depth must be at least 1")
-    .max(10, "Max depth cannot exceed 10")
-    .optional()
-    .default(5),
-  excludePatterns: z
-    .array(z.string())
-    .optional()
-    .default(["node_modules", ".git", "dist", "build"]),
 });
 
 // Plan Response Schema
@@ -25,13 +13,8 @@ export const PlanResponseSchema = z.object({
   id: z.string().uuid("Invalid UUID format"),
   taskDescription: z.string(),
   plan: z.string(), // Markdown formatted plan
-  codebasePath: z.string(),
   createdAt: z.string().datetime("Invalid ISO date format"),
-  metadata: z.object({
-    fileCount: z.number(),
-    analysisTime: z.number(), // in milliseconds
-    planningTime: z.number(), // in milliseconds
-  }),
+  planningTime: z.number(), // in milliseconds
 });
 
 // Stored Plan Schema - extends PlanResponse with status
@@ -48,7 +31,7 @@ export const GetPlanParamsSchema = z.object({
 export const ListPlansQuerySchema = z.object({
   page: z.coerce.number().int().min(1).optional().default(1),
   limit: z.coerce.number().int().min(1).max(100).optional().default(10),
-  sortBy: z.enum(["createdAt", "fileCount"]).optional().default("createdAt"),
+  sortBy: z.enum(["createdAt"]).optional().default("createdAt"),
   sortOrder: z.enum(["asc", "desc"]).optional().default("desc"),
 });
 

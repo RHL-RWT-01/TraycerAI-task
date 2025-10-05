@@ -37,12 +37,10 @@ export class AnthropicProvider implements ILLMProvider {
     }
 
     try {
-      // Format prompt for Anthropic (older SDK version)
       const formattedPrompt = request.systemPrompt
         ? `${request.systemPrompt}\n\nHuman: ${request.prompt}\n\nAssistant:`
         : `Human: ${request.prompt}\n\nAssistant:`;
 
-      // Call Anthropic API
       const response = await this.client.completions.create({
         model: request.model.model,
         max_tokens_to_sample: request.model.maxTokens,

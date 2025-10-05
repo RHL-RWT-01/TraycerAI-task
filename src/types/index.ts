@@ -37,11 +37,34 @@ export interface PlanRequest {
   requirements?: string[];
 }
 
-export interface AnalysisResult {
-  // Will be used by subsequent phases for codebase analysis results
-  files?: string[];
-  structure?: any;
-  complexity?: number;
-  recommendations?: string[];
+// Simple analysis interfaces for planning
+export interface ProjectInfo {
+  name?: string;
+  version?: string;
+  dependencies?: Record<string, string>;
+  devDependencies?: Record<string, string>;
+  description?: string;
+  main?: string;
+  scripts?: Record<string, string>;
+}
+
+export interface Summary {
+  totalFiles: number;
+  totalDirectories: number;
+  filesByExtension: Record<string, number>;
+  estimatedComplexity: "low" | "medium" | "high" | "very high";
+}
+
+export interface AnalysisContext {
+  fileTree?: string[];
+  insights?: string[];
+  patterns?: string[];
+}
+
+export interface AnalysisResponse {
+  codebasePath: string;
+  projectInfo: ProjectInfo;
+  summary: Summary;
+  context?: AnalysisContext;
 }
 

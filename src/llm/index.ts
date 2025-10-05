@@ -1,12 +1,10 @@
 import llmClient from "./client";
 
-// Re-export types
 export {
     ILLMProvider, LLMError, LLMModel, LLMProvider, LLMRequest,
     LLMResponse
 } from "./types";
 
-// Re-export parser functions
 export {
     extractPhases, parsePlanFromResponse,
     validatePlanStructure

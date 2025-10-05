@@ -7,17 +7,23 @@ export class DeepSeekProvider implements ILLMProvider {
   private client: OpenAI;
 
   constructor() {
-    // DeepSeek uses OpenAI-compatible API
+    // DeepSeek via OpenRouter uses OpenAI-compatible API
     this.client = new OpenAI({
-      apiKey: config.deepseekApiKey,
-      baseURL: "https://api.deepseek.com",
+      apiKey: config.deepseekApiKey, // Use your OPENROUTER_API_KEY here
+      baseURL: "https://openrouter.ai/api/v1", // OpenRouter endpoint
+      defaultHeaders: {
+        "HTTP-Referer": config.appUrl || "https://your-app-domain.com",
+        "X-Title": "LLM Client",
+      },
       dangerouslyAllowBrowser: false,
     });
 
     if (this.isConfigured()) {
-      logger.info("DeepSeek provider initialized successfully");
+      logger.info("DeepSeek (OpenRouter) provider initialized successfully");
     } else {
-      logger.warn("DeepSeek provider initialized but API key not configured");
+      logger.warn(
+        "DeepSeek (OpenRouter) provider initialized but API key not configured"
+      );
     }
   }
 
@@ -32,7 +38,7 @@ export class DeepSeekProvider implements ILLMProvider {
   async generateCompletion(request: LLMRequest): Promise<LLMResponse> {
     if (!this.isConfigured()) {
       throw new LLMError(
-        "DeepSeek API key not configured",
+        "DeepSeek (OpenRouter) API key not configured",
         "deepseek",
         undefined,
         false
@@ -40,7 +46,6 @@ export class DeepSeekProvider implements ILLMProvider {
     }
 
     try {
-      // Build messages array
       const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [];
 
       if (request.systemPrompt) {
@@ -55,7 +60,7 @@ export class DeepSeekProvider implements ILLMProvider {
         content: request.prompt,
       });
 
-      logger.debug("DeepSeek API request", {
+      logger.debug("DeepSeek (OpenRouter) request", {
         model: request.model.model,
         messageCount: messages.length,
         maxTokens: request.model.maxTokens,
@@ -63,24 +68,24 @@ export class DeepSeekProvider implements ILLMProvider {
       });
 
       const completion = await this.client.chat.completions.create({
-        model: request.model.model,
+        model: request.model.model || "deepseek/deepseek-coder",
         messages,
-        max_tokens: request.model.maxTokens,
-        temperature: request.model.temperature,
+        max_tokens: request.model.maxTokens || 2048,
+        temperature: request.model.temperature || 0.7,
         stream: false,
       });
 
       const content = completion.choices[0]?.message?.content;
       if (!content) {
         throw new LLMError(
-          "No content returned from DeepSeek API",
+          "No content returned from DeepSeek (OpenRouter)",
           "deepseek",
           undefined,
           true
         );
       }
 
-      logger.debug("DeepSeek API response", {
+      logger.debug("DeepSeek (OpenRouter) response", {
         model: completion.model,
         finishReason: completion.choices[0]?.finish_reason,
         tokensUsed: completion.usage,
@@ -100,79 +105,36 @@ export class DeepSeekProvider implements ILLMProvider {
         finishReason: completion.choices[0]?.finish_reason || undefined,
       };
     } catch (error: any) {
-      // Handle DeepSeek API errors
-      if (error?.response?.status) {
-        const status = error.response.status;
-        const message = error.response.data?.error?.message || error.message;
+      const status = error?.response?.status || error?.status;
+      const message =
+        error?.response?.data?.error?.message || error.message || "Unknown error";
 
-        logger.error("DeepSeek API error", {
-          status,
-          message,
-          retryable: this.isRetryableError(status),
-        });
+      logger.error("DeepSeek (OpenRouter) error", {
+        status,
+        message,
+        retryable: this.isRetryableError(status),
+      });
 
-        throw new LLMError(
-          `DeepSeek API error: ${status} ${message}`,
-          "deepseek",
-          status,
-          this.isRetryableError(status)
-        );
-      }
-
-      // Handle network and other errors
-      if (error.code === "ECONNREFUSED" || error.code === "ENOTFOUND") {
-        logger.error("DeepSeek connection error", {
-          code: error.code,
-          message: error.message,
-        });
-
-        throw new LLMError(
-          `DeepSeek connection failed: ${error.message}`,
-          "deepseek",
-          undefined,
-          true
-        );
-      }
-
-      // Handle OpenAI SDK errors (since DeepSeek uses compatible API)
-      if (error.status) {
-        logger.error("DeepSeek API error", {
-          status: error.status,
-          message: error.message,
-          retryable: this.isRetryableError(error.status),
-        });
-
-        throw new LLMError(
-          `DeepSeek API error: ${error.status} ${error.message}`,
-          "deepseek",
-          error.status,
-          this.isRetryableError(error.status)
-        );
-      }
-
-      // Generic error
-      logger.error("DeepSeek unexpected error", error);
       throw new LLMError(
-        `DeepSeek unexpected error: ${error.message}`,
+        `DeepSeek (OpenRouter) API error: ${status} ${message}`,
         "deepseek",
-        undefined,
-        false
+        status,
+        this.isRetryableError(status)
       );
     }
   }
 
   private isRetryableError(status: number): boolean {
-    // Retry on server errors, rate limits, and timeouts
     return (
-      status >= 500 || // Server errors
-      status === 429 || // Rate limit
-      status === 408 || // Request timeout
-      status === 502 || // Bad gateway
-      status === 503 || // Service unavailable
-      status === 504 // Gateway timeout
+      status >= 500 ||
+      status === 429 ||
+      status === 408 ||
+      status === 502 ||
+      status === 503 ||
+      status === 504
     );
   }
 }
 
-// Export singleton instance
+// Export singleton
 export default new DeepSeekProvider();

@@ -6,6 +6,7 @@ dotenv.config();
 interface Config {
   port: number;
   nodeEnv: string;
+  appUrl: string;
   openaiApiKey: string | undefined;
   anthropicApiKey: string | undefined;
   deepseekApiKey: string | undefined;
@@ -26,6 +27,7 @@ interface Config {
 const config: Config = {
   port: parseInt(process.env.PORT || "3000", 10),
   nodeEnv: process.env.NODE_ENV || "development",
+  appUrl: process.env.APP_URL || "http://localhost:3000",
   openaiApiKey: process.env.OPENAI_API_KEY,
   anthropicApiKey: process.env.ANTHROPIC_API_KEY,
   deepseekApiKey: process.env.DEEPSEEK_API_KEY,

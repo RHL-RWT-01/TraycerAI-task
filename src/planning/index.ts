@@ -1,12 +1,11 @@
 import { randomUUID } from "crypto";
-import { analyzeCodebase } from "../analyzer/index";
 import llmClient from "../llm/index";
 import { CreatePlanRequest, PlanResponse } from "../schemas/plan.schema";
 import logger from "../utils/logger";
 
 /**
  * Main planning orchestration function that coordinates codebase analysis and LLM plan generation
- * @param request - The plan generation request containing task description and codebase configuration
+ * @param request - The plan generation request containing task description
  * @returns Promise<PlanResponse> - Complete plan response with metadata and timing information
  */
 export async function generatePlan(
@@ -21,45 +20,15 @@ export async function generatePlan(
     taskDescription:
       request.taskDescription.substring(0, 100) +
       (request.taskDescription.length > 100 ? "..." : ""),
-    codebasePath: request.codebasePath,
   });
 
   try {
-    // Phase 1: Codebase Analysis
-    const analysisStartTime = Date.now();
-
-    logger.info("Starting codebase analysis", {
-      planId,
-      codebasePath: request.codebasePath,
-    });
-
-    const analysisResult = await analyzeCodebase({
-      codebasePath: request.codebasePath,
-      includeFileTree: request.includeFileTree,
-      maxDepth: request.maxDepth,
-      excludePatterns: request.excludePatterns,
-    });
-
-    const analysisEndTime = Date.now();
-    const analysisTime = analysisEndTime - analysisStartTime;
-    const fileCount = analysisResult.summary.totalFiles;
-
-    logger.info("Codebase analysis completed", {
-      planId,
-      analysisTime,
-      fileCount,
-    });
-
-    // Phase 2: Plan Generation via LLM
+    // Phase 1: Plan Generation via LLM (no codebase analysis needed)
     const planningStartTime = Date.now();
 
     logger.info("Starting LLM plan generation", { planId });
 
-    const planContent = await llmClient.generatePlan(
-      request.taskDescription,
-      analysisResult,
-      undefined // Use default provider and model
-    );
+    const planContent = await llmClient.generatePlan(request.taskDescription);
 
     const planningEndTime = Date.now();
     const planningTime = planningEndTime - planningStartTime;
@@ -75,13 +44,8 @@ export async function generatePlan(
       id: planId,
       taskDescription: request.taskDescription,
       plan: planContent,
-      codebasePath: request.codebasePath,
       createdAt: new Date().toISOString(),
-      metadata: {
-        fileCount,
-        analysisTime,
-        planningTime,
-      },
+      planningTime,
     };
 
     const totalTime = Date.now() - startTime;
@@ -89,8 +53,6 @@ export async function generatePlan(
     logger.info("Plan generation successful", {
       planId,
       totalTime,
-      fileCount,
-      analysisTime,
       planningTime,
     });
 
@@ -146,27 +108,12 @@ export async function generatePlan(
       }
 
       if (
-        error.message.includes("analyzer") ||
-        error.message.includes("analyzeCodebase")
-      ) {
-        throw new Error(`Codebase analysis failed: ${error.message}`);
-      } else if (
         error.message.includes("llm") ||
         error.message.includes("plan generation")
       ) {
         throw new Error(`Plan generation failed: ${error.message}`);
       } else {
-        // Generic analyzer or LLM error - try to determine from context
-        const errorString = error.message.toLowerCase();
-        if (
-          errorString.includes("file") ||
-          errorString.includes("directory") ||
-          errorString.includes("parse")
-        ) {
-          throw new Error(`Codebase analysis failed: ${error.message}`);
-        } else {
-          throw new Error(`Plan generation failed: ${error.message}`);
-        }
+        throw new Error(`Plan generation failed: ${error.message}`);
       }
     }
 
