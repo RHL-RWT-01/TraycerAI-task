@@ -102,3 +102,13 @@ src/
 - `npm start` - Start production server
 - `npm run type-check` - Type checking without emitting files
 
+## Client
+
+To run the React client:
+
+```bash
+cd client
+npm install
+npm run dev
+```
+
